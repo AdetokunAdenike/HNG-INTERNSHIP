@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Query, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 import requests
@@ -25,10 +25,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"number": invalid_number, "error": True},
     )
 
-# Root endpoint
+# Redirect root URL to /api/classify-number
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to the Number Classification API!"}
+async def redirect_to_api():
+    return RedirectResponse(url="/api/classify-number")
 
 # Helper functions
 def is_prime(n: int) -> bool:
