@@ -46,7 +46,7 @@ Response:
    ```
 
 ## Deployment
-[API Live on Vercel]()
+[API Live on Vercel](https://hng-task1-kappa.vercel.app/)
 
 ## Technologies Used
 - Python
