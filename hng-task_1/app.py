@@ -1,17 +1,16 @@
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware  # Import CORS middleware
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 
-# Create the FastAPI app
 app = FastAPI()
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins
-    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
 )
 
@@ -19,7 +18,8 @@ app.add_middleware(
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     # Extract the invalid input from the query parameters
-    invalid_number = request.query_params.get("number", "")
+    query_params = request.url.query
+    invalid_number = query_params.split("=")[1] if "=" in query_params else ""
     return JSONResponse(
         status_code=400,
         content={"number": invalid_number, "error": True},
@@ -34,7 +34,7 @@ def read_root():
 def is_prime(n: int) -> bool:
     if n < 2:
         return False
-    for i in range(2, int(n**0.5) + 1):
+    for i in range(2, int(abs(n)**0.5) + 1):  # Use abs(n) for negative numbers
         if n % i == 0:
             return False
     return True
@@ -42,16 +42,16 @@ def is_prime(n: int) -> bool:
 def is_perfect(n: int) -> bool:
     if n < 2:
         return False
-    divisors = [i for i in range(1, n) if n % i == 0]
-    return sum(divisors) == n
+    divisors = [i for i in range(1, abs(n)) if n % i == 0]  # Use abs(n) for negative numbers
+    return sum(divisors) == abs(n)  # Use abs(n) for negative numbers
 
 def is_armstrong(n: int) -> bool:
-    digits = [int(d) for d in str(n)]
+    digits = [int(d) for d in str(abs(n))]  # Use abs(n) for negative numbers
     length = len(digits)
-    return sum(d ** length for d in digits) == n
+    return sum(d ** length for d in digits) == abs(n)  # Use abs(n) for negative numbers
 
 def digit_sum(n: int) -> int:
-    return sum(int(d) for d in str(n))
+    return sum(int(d) for d in str(abs(n)))  # Use abs(n) for negative numbers
 
 def get_fun_fact(n: int) -> str:
     url = f"http://numbersapi.com/{n}/math"
