@@ -2,7 +2,8 @@ from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-import requests
+import httpx
+import math
 
 app = FastAPI()
 
@@ -34,7 +35,7 @@ async def redirect_to_api():
 def is_prime(n: int) -> bool:
     if n < 2:
         return False
-    for i in range(2, int(abs(n)**0.5) + 1):  # Use abs(n) for negative numbers
+    for i in range(2, math.isqrt(abs(n)) + 1):  # Use math.isqrt for better performance
         if n % i == 0:
             return False
     return True
@@ -42,21 +43,30 @@ def is_prime(n: int) -> bool:
 def is_perfect(n: int) -> bool:
     if n < 2:
         return False
-    divisors = [i for i in range(1, abs(n)) if n % i == 0]  # Use abs(n) for negative numbers
-    return sum(divisors) == abs(n)  # Use abs(n) for negative numbers
+    divisors = [i for i in range(1, abs(n)) if n % i == 0]
+    return sum(divisors) == abs(n)
 
 def is_armstrong(n: int) -> bool:
-    digits = [int(d) for d in str(abs(n))]  # Use abs(n) for negative numbers
+    digits = [int(d) for d in str(abs(n))]
     length = len(digits)
-    return sum(d ** length for d in digits) == abs(n)  # Use abs(n) for negative numbers
+    return sum(d ** length for d in digits) == abs(n)
 
 def digit_sum(n: int) -> int:
-    return sum(int(d) for d in str(abs(n)))  # Use abs(n) for negative numbers
+    return sum(int(d) for d in str(abs(n)))
 
-def get_fun_fact(n: int) -> str:
+# Cache for fun facts
+fun_fact_cache = {}
+
+async def get_fun_fact(n: int) -> str:
+    if n in fun_fact_cache:
+        return fun_fact_cache[n]
+    
     url = f"http://numbersapi.com/{n}/math"
-    response = requests.get(url)
-    return response.text if response.status_code == 200 else "No fun fact available."
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+    fun_fact = response.text if response.status_code == 200 else "No fun fact available."
+    fun_fact_cache[n] = fun_fact  # Cache the result
+    return fun_fact
 
 # API Endpoint
 @app.get("/api/classify-number")
@@ -69,12 +79,14 @@ async def classify_number(number: int = Query(..., description="The number to cl
     else:
         properties.append("odd")
 
+    fun_fact = await get_fun_fact(number)  # Await the async function
+
     response = {
         "number": number,
         "is_prime": is_prime(number),
         "is_perfect": is_perfect(number),
         "properties": properties,
         "digit_sum": digit_sum(number),
-        "fun_fact": get_fun_fact(number),
+        "fun_fact": fun_fact,
     }
     return response
